@@ -16,13 +16,13 @@ project(uvgrtp
 include(GNUInstallDirs)
 
 
-option(UVGRTP_DISABLE_CRYPTO "Do not build uvgRTP with crypto enabled" OFF)
+option(UVGRTP_DISABLE_CRYPTO "Do not build uvgRTP with crypto enabled" ON)
 option(UVGRTP_DISABLE_PRINTS "Do not print anything from uvgRTP" OFF)
-option(UVGRTP_DISABLE_WERROR "Ignore compiler warnings" ON)
+option(UVGRTP_DISABLE_WERROR "Ignore compiler warnings" OFF)
 
-option(UVGRTP_DISABLE_TESTS    "Do not build unit tests" OFF)
+option(UVGRTP_DISABLE_TESTS    "Do not build unit tests" ON)
 option(UVGRTP_DISABLE_EXAMPLES "Do not build examples" OFF)
-option(UVGRTP_DISABLE_INSTALL  "Do not install anything from uvgRTP" OFF)
+option(UVGRTP_DISABLE_INSTALL  "Do not install anything from uvgRTP" ON)
 
 option(UVGRTP_DOWNLOAD_CRYPTO  "Download headers for Crypto++ if they are missing" OFF)
 
