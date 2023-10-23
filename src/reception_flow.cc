@@ -30,13 +30,13 @@
 
 constexpr size_t DEFAULT_INITIAL_BUFFER_SIZE = 4194304;
 
-uvgrtp::reception_flow::reception_flow(bool ipv6) :
+uvgrtp::reception_flow::reception_flow() :
     frames_({}),
     hooks_({}),
     should_stop_(true),
     receiver_(nullptr),
-    user_hook_arg_(nullptr),
-    user_hook_(nullptr),
+    //user_hook_arg_(nullptr),
+    //user_hook_(nullptr),
     packet_handlers_({}),
     poll_timeout_ms_(100),
     ring_buffer_(),
@@ -45,8 +45,7 @@ uvgrtp::reception_flow::reception_flow(bool ipv6) :
     socket_(),
     buffer_size_kbytes_(DEFAULT_INITIAL_BUFFER_SIZE),
     payload_size_(MAX_IPV4_PAYLOAD),
-    active_(false),
-    ipv6_(ipv6)
+    active_(false)
 {
     create_ring_buffer();
 }
@@ -159,7 +158,7 @@ rtp_error_t uvgrtp::reception_flow::start(std::shared_ptr<uvgrtp::socket> socket
 }
 
 rtp_error_t uvgrtp::reception_flow::stop()
-{    
+{
     std::lock_guard<std::mutex> lg(active_mutex_);
     if (!active_) {
         return RTP_OK;
@@ -222,7 +221,7 @@ uvgrtp::frame::rtp_frame *uvgrtp::reception_flow::pull_frame(ssize_t timeout_ms)
 {
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    while (frames_.empty() && 
+    while (frames_.empty() &&
         !should_stop_ &&
         timeout_ms > std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start_time).count())
     {
@@ -417,7 +416,7 @@ void uvgrtp::reception_flow::return_user_pkt(uint8_t* pkt, uint32_t len)
 */
 void uvgrtp::reception_flow::receiver(std::shared_ptr<uvgrtp::socket> socket)
 {
-    int read_packets = 0;
+    [[maybe_unused]]int read_packets = 0;
 
     while (!should_stop_) {
 
@@ -460,7 +459,7 @@ void uvgrtp::reception_flow::receiver(std::shared_ptr<uvgrtp::socket> socket)
                 rtp_error_t ret = RTP_OK;
                 //sockaddr_in sender = {};
                 //sockaddr_in6 sender6 = {};
-                
+
                 // get the potential packet
                 ret = socket->recvfrom(ring_buffer_[next_write_index].data, payload_size_,
                     MSG_DONTWAIT, &ring_buffer_[next_write_index].read);
@@ -507,12 +506,12 @@ void uvgrtp::reception_flow::process_packet(int rce_flags)
 {
     std::unique_lock<std::mutex> lk(wait_mtx_);
 
-    int processed_packets = 0;
+    [[maybe_unused]]int processed_packets = 0;
 
     while (!should_stop_)
     {
         // go to sleep waiting for something to process
-        process_cond_.wait(lk); 
+        process_cond_.wait(lk);
 
         if (should_stop_)
         {
@@ -533,12 +532,12 @@ void uvgrtp::reception_flow::process_packet(int rce_flags)
                  * 2. Check the SSRC of the packets. This field is in the same place for RTP and ZRTP, octets 8-11. For RTCP, it is
                  *    in octets 4-7
                  * 3. If there is no SSRC match for any of the handlers, this either a holepuncher or a user packet.
-                 * 4. SSRC match found -> Determine which protocol this packet belongs to. RTCP packets can be told apart from RTP packets via 
+                 * 4. SSRC match found -> Determine which protocol this packet belongs to. RTCP packets can be told apart from RTP packets via
                  *    bits 8-15. ZRTP packets can be told apart from others via their 2 first bits being 0 and the Magic Cookie
                  *    field being 0x5a525450. Holepuncher packets contain 0x00 payload. However, holepunching is
-                 *    not needed if RTCP is enabled. 
+                 *    not needed if RTCP is enabled.
                  * 5. After determining the correct protocol, hand out the packet to the correct handler(s) if it exists. */
-                
+
                 uint8_t* ptr = (uint8_t*)ring_buffer_[ring_read_index_].data;
                 //sockaddr_in from = ring_buffer_[ring_read_index_].from;
                 //sockaddr_in6 from6 = ring_buffer_[ring_read_index_].from6;
@@ -573,7 +572,7 @@ void uvgrtp::reception_flow::process_packet(int rce_flags)
                      * 1. SSRC is in octets 4-7                         -> RTCP packet
                      * 2. Version 0 and Magic Cookie is 0x5a525450      -> ZRTP packet
                      * 3. Version is 2                                  -> RTP packet     (or SRTP)
-                     * 4. Version is 3                                  -> Keep-Alive/Holepuncher 
+                     * 4. Version is 3                                  -> Keep-Alive/Holepuncher
                      * 5. Otherwise                                     -> User packet, DISABLED */
                     if (rtcp_pkt && (rce_flags & RCE_RTCP_MUX)) {
                         uint8_t pt = (uint8_t)ptr[1]; // Packet type
@@ -657,11 +656,11 @@ void uvgrtp::reception_flow::process_packet(int rce_flags)
             }
             else
             {
-#ifndef NDEBUG 
+#ifndef NDEBUG
 #ifndef __RTP_SILENT__
                 ssize_t write = last_ring_write_index_;
                 ssize_t read = ring_read_index_;
-                UVG_LOG_DEBUG("Found invalid frame in read buffer: %li. R: %lli, W: %lli", 
+                UVG_LOG_DEBUG("Found invalid frame in read buffer: %li. R: %lli, W: %lli",
                     ring_buffer_[ring_read_index_].read, read, write);
 #endif
 #endif
@@ -718,7 +717,7 @@ int uvgrtp::reception_flow::clear_stream_from_flow(std::shared_ptr<std::atomic<s
     // Clear all the data structures
     hooks_.erase(ssrc);
     packet_handlers_.erase(ssrc);
-    
+
     // If all the data structures are empty, return 1 which means that there is no streams left for this reception_flow
     // and it can be safely deleted
     if (hooks_.empty() && packet_handlers_.empty()) {

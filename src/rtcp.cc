@@ -39,20 +39,16 @@ const uint32_t MIN_SEQUENTIAL = 2;
 const uint32_t MAX_DROPOUT    = 3000;
 const uint32_t MAX_MISORDER   = 100;
 const uint32_t DEFAULT_RTCP_INTERVAL_MS = 5000;
-const int MAX_PACKET = 65536;
-
-constexpr int ESTIMATED_MAX_RECEPTION_TIME_MS = 10;
 
 const uint32_t MAX_SUPPORTED_PARTICIPANTS = 31;
 
 uvgrtp::rtcp::rtcp(std::shared_ptr<uvgrtp::rtp> rtp, std::shared_ptr<std::atomic_uint> ssrc, std::shared_ptr<std::atomic<uint32_t>> remote_ssrc,
     std::string cname, std::shared_ptr<uvgrtp::socketfactory> sfp, int rce_flags) :
     rce_flags_(rce_flags), our_role_(RECEIVER),
-    tp_(0), tc_(0), tn_(0), pmembers_(0),
     members_(0), senders_(0), rtcp_bandwidth_(0), reduced_minimum_(0),
     we_sent_(false), local_addr_(""), remote_addr_(""), local_port_(0), dst_port_(0),
     avg_rtcp_pkt_pize_(0), avg_rtcp_size_(64), rtcp_pkt_count_(0), rtcp_byte_count_(0),
-    rtcp_pkt_sent_count_(0), initial_(true), ssrc_(ssrc), remote_ssrc_(remote_ssrc),
+    rtcp_pkt_sent_count_(0), ssrc_(ssrc), remote_ssrc_(remote_ssrc),
     num_receivers_(0),
     ipv6_(false),
     socket_address_({}),
@@ -241,7 +237,7 @@ rtp_error_t uvgrtp::rtcp::start()
     }
     else
     {
-        
+
         UVG_LOG_WARN("No local address provided, binding RTCP to INADDR_ANY");
         UVG_LOG_INFO("Binding RTCP to port %s:%d", local_addr_.c_str(), local_port_);
         if ((ret = sfp_->bind_socket_anyip(rtcp_socket_, local_port_)) != RTP_OK) {
@@ -293,7 +289,7 @@ rtp_error_t uvgrtp::rtcp::stop()
             sfp_->clear_port(local_port_, rtcp_socket_);
         }
     }
-    
+
     return ret;
 }
 
@@ -308,9 +304,9 @@ void uvgrtp::rtcp::rtcp_runner(rtcp* rtcp)
 
     uint32_t current_interval_ms = rtcp->get_rtcp_interval_ms();
     rtp_error_t ret = RTP_OK;
-    
+
     // keep track of report numbers
-    int report_number = 0;
+    [[maybe_unused]]int report_number = 0;
 
     while (rtcp->is_active())
     {
@@ -863,7 +859,7 @@ rtp_error_t uvgrtp::rtcp::init_new_participant(const uvgrtp::frame::rtp_frame *f
     else {
         ms_since_last_rep_.insert({ sender_ssrc, 0 });
     }
-    
+
     if ((ret = uvgrtp::rtcp::add_participant(frame->header.ssrc)) != RTP_OK)
     {
         return ret;
@@ -1016,7 +1012,7 @@ void uvgrtp::rtcp::update_session_statistics(const uvgrtp::frame::rtp_frame *fra
     participants_[frame->header.ssrc]->stats.received_bytes += (uint32_t)frame->payload_len;
 
     /* calculate number of dropped packets */
-    int extended_max = (static_cast<int>(participants_[frame->header.ssrc]->stats.cycles) << 16) + 
+    int extended_max = (static_cast<int>(participants_[frame->header.ssrc]->stats.cycles) << 16) +
         participants_[frame->header.ssrc]->stats.max_seq;
     int expected     = extended_max - participants_[frame->header.ssrc]->stats.base_seq + 1;
 
@@ -1034,7 +1030,7 @@ void uvgrtp::rtcp::update_session_statistics(const uvgrtp::frame::rtp_frame *fra
 
     // update statistics
     participants_[frame->header.ssrc]->stats.transit = transit;
-    participants_[frame->header.ssrc]->stats.jitter += (1.f / 16.f) * 
+    participants_[frame->header.ssrc]->stats.jitter += (1.f / 16.f) *
         ((double)trans_difference - participants_[frame->header.ssrc]->stats.jitter);
 }
 
@@ -1141,8 +1137,8 @@ rtp_error_t uvgrtp::rtcp::handle_incoming_packet(void* args, int rce_flags, uint
     if (size > RTCP_HEADER_SIZE + SSRC_CSRC_SIZE)
     {
         sender_ssrc = ntohl(*(uint32_t*)& buffer[read_ptr + RTCP_HEADER_SIZE]);
-        
-        if (srtcp_ && (ret = srtcp_->handle_rtcp_decryption(rce_flags_, sender_ssrc, 
+
+        if (srtcp_ && (ret = srtcp_->handle_rtcp_decryption(rce_flags_, sender_ssrc,
             buffer + RTCP_HEADER_SIZE + SSRC_CSRC_SIZE, size)) != RTP_OK)
         {
             UVG_LOG_ERROR("Failed at decryption");
@@ -1196,7 +1192,7 @@ rtp_error_t uvgrtp::rtcp::handle_incoming_packet(void* args, int rce_flags, uint
         if (ms_since_last_rep_.find(sender_ssrc) != ms_since_last_rep_.end()) {
             ms_since_last_rep_.at(sender_ssrc) = 0;
         }
-        else {            
+        else {
             ms_since_last_rep_.insert({ sender_ssrc, 0 });
         }
         if (header.pkt_type > uvgrtp::frame::RTCP_FT_APP ||
@@ -1335,15 +1331,15 @@ rtp_error_t uvgrtp::rtcp::handle_receiver_report_packet(uint8_t* buffer, size_t&
     if (!is_participant(frame->ssrc))
     {
         UVG_LOG_INFO("Got an RR from a previously unknown participant SSRC %lu", frame->ssrc);
-        
+
         /* First add the participant to the initial_participants vector */
         /* Second one moves it from initial_participants to participants_ */
         // TODO: There should be probation? is it already implemented?
         add_initial_participant(clock_rate_);
-        
+
         add_participant(frame->ssrc);
     }
-    
+
     read_reports(buffer, read_ptr, packet_end, frame->header.count, frame->report_blocks);
 
     rr_mutex_.lock();
@@ -1503,15 +1499,15 @@ rtp_error_t uvgrtp::rtcp::handle_sdes_packet(uint8_t* packet, size_t& read_ptr, 
     return RTP_OK;
 }
 
-rtp_error_t uvgrtp::rtcp::handle_bye_packet(uint8_t* packet, size_t& read_ptr, 
+rtp_error_t uvgrtp::rtcp::handle_bye_packet(uint8_t* packet, size_t& read_ptr,
      uvgrtp::frame::rtcp_header& header)
 {
     (void)header;
-    
+
     uint8_t sc = header.count;
     for (size_t i = 0; i < sc; ++i)
     {
-        uint32_t ssrc = 0; 
+        uint32_t ssrc = 0;
         read_ssrc(packet, read_ptr, ssrc);
 
         if (!is_participant(ssrc))
@@ -1592,7 +1588,7 @@ rtp_error_t uvgrtp::rtcp::handle_app_packet(uint8_t* packet, size_t& read_ptr,
 }
 
 rtp_error_t uvgrtp::rtcp::handle_fb_packet(uint8_t* packet, size_t& read_ptr,
-    size_t packet_end, uvgrtp::frame::rtcp_header& header)
+    [[maybe_unused]]size_t packet_end, uvgrtp::frame::rtcp_header& header)
 {
     auto frame = new uvgrtp::frame::rtcp_fb_packet;
     frame->header = header;
@@ -1662,7 +1658,7 @@ rtp_error_t uvgrtp::rtcp::send_rtcp_packet_to_participants(uint8_t* frame, uint3
 
     rtp_error_t ret = RTP_OK;
 
-    if (encrypt && srtcp_ && 
+    if (encrypt && srtcp_ &&
         (ret = srtcp_->handle_rtcp_encryption(rce_flags_, rtcp_pkt_sent_count_, *ssrc_.get(), frame, frame_size)) != RTP_OK)
     {
         UVG_LOG_DEBUG("Encryption failed. Not sending packet");
@@ -1686,7 +1682,7 @@ rtp_error_t uvgrtp::rtcp::send_rtcp_packet_to_participants(uint8_t* frame, uint3
     {
         UVG_LOG_ERROR("Tried to send RTCP packet when socket does not exist!");
     }
-    
+
     delete[] frame;
     return ret;
 }
@@ -1722,7 +1718,7 @@ uint32_t uvgrtp::rtcp::size_of_compound_packet(uint16_t reports,
     uint32_t compound_packet_size = 0;
 
     if (sr_packet)
-    {  
+    {
         compound_packet_size = get_sr_packet_size(rce_flags_, reports);
         UVG_LOG_DEBUG("Sending SR. Compound packet size: %li", compound_packet_size);
     }
@@ -1803,7 +1799,7 @@ rtp_error_t uvgrtp::rtcp::generate_report()
         app_packets_size = size_of_apps_from_hook(outgoing_apps_);
     }
     uint32_t compound_packet_size = size_of_compound_packet(reports, sr_packet, rr_packet, sdes_packet, app_packets_size, bye_packet);
-    
+
     if (compound_packet_size == 0)
     {
         UVG_LOG_WARN("Failed to get compound packet size");
@@ -1877,7 +1873,7 @@ rtp_error_t uvgrtp::rtcp::generate_report()
         if (p.second->stats.received_rtp_packet)
         {
             uint32_t dropped_packets = p.second->stats.lost_pkts;
-            
+
             /* RFC3550 page 83, Appendix A.3 */
             /* Determine number of packets lost and expected */
             uint32_t extended_max = ((p.second->stats.cycles) << 16) + p.second->stats.max_seq;
@@ -1897,14 +1893,14 @@ rtp_error_t uvgrtp::rtcp::generate_report()
             uint32_t received_interval = p.second->stats.received_pkts - p.second->stats.received_prior;
             p.second->stats.received_prior = p.second->stats.received_pkts;
             int32_t lost_interval = expected_interval - received_interval;
-            
+
             /* Calculate fractions of packets lost during last reporting interval */
             uint32_t fraction = 0;
             if (expected_interval == 0 || lost_interval <= 0) {
-                fraction = 0; 
+                fraction = 0;
             }
-            else { 
-                fraction = (lost_interval << 8) / expected_interval; 
+            else {
+                fraction = (lost_interval << 8) / expected_interval;
                 if (fraction > 255) {
                     fraction = 255;
                 }
@@ -1920,7 +1916,7 @@ rtp_error_t uvgrtp::rtcp::generate_report()
             }
 
             construct_report_block(frame, write_ptr, p.first, uint8_t(fraction), dropped_packets,
-                p.second->stats.cycles, p.second->stats.max_seq, (uint32_t)p.second->stats.jitter, 
+                p.second->stats.cycles, p.second->stats.max_seq, (uint32_t)p.second->stats.jitter,
                 p.second->stats.lsr, dlrs);
 
             // we only send reports if there is something to report since last report
@@ -1996,7 +1992,7 @@ rtp_error_t uvgrtp::rtcp::generate_report()
 
         bye_ssrcs_.clear();
     }
-    
+
 
     UVG_LOG_DEBUG("Sending RTCP report compound packet, Total size: %lli",
         compound_packet_size);
@@ -2054,7 +2050,7 @@ rtp_error_t uvgrtp::rtcp::send_app_packet(const char* name, uint8_t subtype,
     return RTP_OK;
 }
 
-uint32_t uvgrtp::rtcp::get_rtcp_interval_ms() const 
+uint32_t uvgrtp::rtcp::get_rtcp_interval_ms() const
 {
     return interval_ms_.load();
 }
@@ -2156,7 +2152,7 @@ double uvgrtp::rtcp::rtcp_interval(int members, int senders,
 
     /* Add randomisation to avoid unintended synchronization of RTCP traffic */
     /* RFC3550 uses drand48() which apparently is obsolete? Lets use anoher one ? */
-    
+
     if (randomisation) {
         std::random_device rd;
         std::mt19937 gen(rd());

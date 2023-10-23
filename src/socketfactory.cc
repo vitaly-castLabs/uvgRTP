@@ -24,8 +24,6 @@
 #include <cstring>
 #include <iterator>
 
-constexpr size_t DEFAULT_INITIAL_BUFFER_SIZE = 4194304;
-
 uvgrtp::socketfactory::socketfactory(int rce_flags) :
     rce_flags_(rce_flags),
     local_address_(""),
@@ -93,7 +91,7 @@ std::shared_ptr<uvgrtp::socket> uvgrtp::socketfactory::create_new_socket(int typ
 
         // If the socket is a type 2 (non-RTCP) socket, install a reception_flow
         if (type == 2) {
-            std::shared_ptr<uvgrtp::reception_flow> flow = std::shared_ptr<uvgrtp::reception_flow>(new uvgrtp::reception_flow(ipv6_));
+            std::shared_ptr<uvgrtp::reception_flow> flow = std::shared_ptr<uvgrtp::reception_flow>(new uvgrtp::reception_flow());
             std::pair pair = std::make_pair(flow, socket);
             reception_flows_.insert(pair);
         }
@@ -104,7 +102,7 @@ std::shared_ptr<uvgrtp::socket> uvgrtp::socketfactory::create_new_socket(int typ
         }
         return socket;
     }
-    
+
     return nullptr;
 }
 
@@ -116,7 +114,7 @@ rtp_error_t uvgrtp::socketfactory::bind_socket(std::shared_ptr<uvgrtp::socket> s
 
     // First check if the address is a multicast address. If the address is a multicast address, several
     // streams can bind to the same port
-    // If it is a regular address and you want to multiplex several streams into a single socket, one 
+    // If it is a regular address and you want to multiplex several streams into a single socket, one
     // bind is enough
     if (ipv6_) {
         bind_addr6 = uvgrtp::socket::create_ip6_sockaddr(local_address_, port);
@@ -178,7 +176,7 @@ std::shared_ptr<uvgrtp::socket> uvgrtp::socketfactory::get_socket_ptr(int type, 
     return create_new_socket(type, port);
 }
 
-std::shared_ptr<uvgrtp::reception_flow> uvgrtp::socketfactory::get_reception_flow_ptr(std::shared_ptr<uvgrtp::socket> socket) 
+std::shared_ptr<uvgrtp::reception_flow> uvgrtp::socketfactory::get_reception_flow_ptr(std::shared_ptr<uvgrtp::socket> socket)
 {
     std::lock_guard<std::mutex> lg(conf_mutex_);
     for (const auto& ptr : reception_flows_) {
