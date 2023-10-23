@@ -42,7 +42,7 @@ struct uvgrtpCtx {
         sndSession = ctx.create_session(SND_ADDRESS);
         if (rcvSession && sndSession) {
             rcvStream = rcvSession->create_stream(RCV_PORT, RTP_FORMAT_H264, RCE_RECEIVE_ONLY | RCE_NO_H26X_PREPEND_SC);
-            sndStream = sndSession->create_stream(SND_PORT, RTP_FORMAT_H264, RCE_SEND_ONLY | RCE_NO_H26X_SCL);
+            sndStream = sndSession->create_stream(SND_PORT, RTP_FORMAT_H264, RCE_SEND_ONLY);
         }
     }
 
