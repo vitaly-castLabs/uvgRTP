@@ -62,11 +62,26 @@ struct uvgrtpCtx {
     }
 };
 
+std::string naluType(uint8_t nal_unit_type) {
+    switch (nal_unit_type) {
+        case 1: return "Slice";
+        case 5: return "IDR slice";
+        case 6: return "SEI";
+        case 7: return "SPS";
+        case 8: return "PPS";
+        case 9: return "AUD";
+        default: return std::to_string(nal_unit_type);
+    }
+}
+
 void rtp_receive_hook(void* arg, uvgrtp::frame::rtp_frame* nalu) {
     uvgrtpCtx* ctx = reinterpret_cast<uvgrtpCtx*>(arg);
     if (nalu) {
-        if (nalu->payload_len > 0)
-            std::cout << "NALU type " << (nalu->payload[0] & 0x1f) << ", " << nalu->payload_len << " bytes" << std::endl;
+        if (nalu->payload_len > 0) {
+            std::cout << "NALU type " << naluType(nalu->payload[0] & 0x1f) << ", " << nalu->payload_len << " bytes" << std::endl;
+            if (ctx->sndStream->push_frame(nalu->payload, nalu->payload_len, RTP_NO_H26X_SCL) != RTP_OK)
+                std::cerr << "Failed to send frame\n";
+        }
         (void)uvgrtp::frame::dealloc_frame(nalu);
     }
 }
