@@ -278,11 +278,11 @@ if(APPLE)
 endif()
 
 if (NOT UVGRTP_DISABLE_EXAMPLES)
-    add_subdirectory(examples EXCLUDE_FROM_ALL)
+    add_subdirectory(examples)
 endif()
 
 if (NOT UVGRTP_DISABLE_TESTS)
-    add_subdirectory(test EXCLUDE_FROM_ALL)
+    add_subdirectory(test)
 endif()
 
 if (NOT UVGRTP_DISABLE_INSTALL)
