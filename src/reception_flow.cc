@@ -428,8 +428,7 @@ void uvgrtp::reception_flow::receiver(std::shared_ptr<uvgrtp::socket> socket)
         pollfd* pfds = new pollfd();
 #endif
 
-        size_t read_fds = socket->get_raw_socket();
-        pfds->fd = read_fds;
+        pfds->fd = socket->get_raw_socket();
         pfds->events = POLLIN;
 
         // exits after poll_timeout_ms_ time if no data has been received to check whether we should exit

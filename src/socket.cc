@@ -414,7 +414,7 @@ rtp_error_t uvgrtp::socket::remove_handler(std::shared_ptr<std::atomic<std::uint
 
 rtp_error_t uvgrtp::socket::__sendto(sockaddr_in& addr, sockaddr_in6& addr6, bool ipv6, uint8_t *buf, size_t buf_len, int send_flags, int *bytes_sent)
 {
-    int nsend = 0;
+    ssize_t nsend = 0;
 
 #ifndef _WIN32
     if (ipv6) {
@@ -461,7 +461,7 @@ rtp_error_t uvgrtp::socket::__sendto(sockaddr_in& addr, sockaddr_in6& addr6, boo
 #endif
 
     if (bytes_sent) {
-        *bytes_sent = nsend;
+        *bytes_sent = static_cast<int>(nsend);
     }
 
 #ifndef NDEBUG
@@ -507,7 +507,7 @@ rtp_error_t uvgrtp::socket::__sendtov(
         header_.msg_hdr.msg_namelen    = sizeof(addr);
     }
     header_.msg_hdr.msg_iov        = chunks_;
-    header_.msg_hdr.msg_iovlen     = buffers.size();
+    header_.msg_hdr.msg_iovlen     = static_cast<int>(buffers.size());
     header_.msg_hdr.msg_control    = 0;
     header_.msg_hdr.msg_controllen = 0;
 
@@ -616,7 +616,7 @@ rtp_error_t uvgrtp::socket::__sendtov(
 
     for (size_t i = 0; i < buffers.size(); ++i) {
         headers[i].msg_hdr.msg_iov        = new struct iovec[buffers[i].size()];
-        headers[i].msg_hdr.msg_iovlen     = buffers[i].size();
+        headers[i].msg_hdr.msg_iovlen     = static_cast<int>(buffers[i].size());
         if (ipv6) {
             headers[i].msg_hdr.msg_name = (void*)&addr6;
             headers[i].msg_hdr.msg_namelen = sizeof(addr6);
@@ -639,7 +639,7 @@ rtp_error_t uvgrtp::socket::__sendtov(
     ssize_t bptr  = buffers.size();
 
     while (bptr > npkts) {
-        if (sendmmsg(socket_, hptr, npkts, send_flags) < 0) {
+        if (sendmmsg(socket_, hptr, static_cast<unsigned int>(npkts), send_flags) < 0) {
             log_platform_error("sendmmsg(2) failed");
             return_value = RTP_SEND_ERROR;
             break;
@@ -651,7 +651,7 @@ rtp_error_t uvgrtp::socket::__sendtov(
 
     if (return_value == RTP_OK)
     {
-        if (sendmmsg(socket_, hptr, bptr, send_flags) < 0) {
+        if (sendmmsg(socket_, hptr, static_cast<unsigned int>(bptr), send_flags) < 0) {
             log_platform_error("sendmmsg(2) failed");
             return_value = RTP_SEND_ERROR;
         }
@@ -787,7 +787,7 @@ rtp_error_t uvgrtp::socket::__recv(uint8_t *buf, size_t buf_len, int recv_flags,
     }
 
 #ifndef _WIN32
-    int32_t ret = ::recv(socket_, buf, buf_len, recv_flags);
+    auto ret = ::recv(socket_, buf, buf_len, recv_flags);
 
     if (ret == -1) {
         if (errno == EAGAIN || errno == EINTR) {
@@ -800,7 +800,7 @@ rtp_error_t uvgrtp::socket::__recv(uint8_t *buf, size_t buf_len, int recv_flags,
         return RTP_GENERIC_ERROR;
     }
 
-    set_bytes(bytes_read, ret);
+    set_bytes(bytes_read, static_cast<int>(ret));
 #else
     (void)recv_flags;
 
@@ -852,7 +852,7 @@ rtp_error_t uvgrtp::socket::__recvfrom(uint8_t *buf, size_t buf_len, int recv_fl
         len_ptr = &len;
 
 #ifndef _WIN32
-    int32_t ret = ::recvfrom(socket_, buf, buf_len, recv_flags, (struct sockaddr *)sender, len_ptr);
+    auto ret = ::recvfrom(socket_, buf, buf_len, recv_flags, (struct sockaddr *)sender, len_ptr);
 
     if (ret == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -865,7 +865,7 @@ rtp_error_t uvgrtp::socket::__recvfrom(uint8_t *buf, size_t buf_len, int recv_fl
         return RTP_GENERIC_ERROR;
     }
 
-    set_bytes(bytes_read, ret);
+    set_bytes(bytes_read, static_cast<int>(ret));
 #else
 
     (void)recv_flags;
@@ -907,7 +907,7 @@ rtp_error_t uvgrtp::socket::__recvfrom_ip6(uint8_t* buf, size_t buf_len, int rec
         len_ptr = &len;
 
 #ifndef _WIN32
-    int32_t ret = ::recvfrom(socket_, buf, buf_len, recv_flags, (struct sockaddr*)sender, len_ptr);
+    auto ret = ::recvfrom(socket_, buf, buf_len, recv_flags, (struct sockaddr*)sender, len_ptr);
 
     if (ret == -1) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -920,7 +920,7 @@ rtp_error_t uvgrtp::socket::__recvfrom_ip6(uint8_t* buf, size_t buf_len, int rec
         return RTP_GENERIC_ERROR;
     }
 
-    set_bytes(bytes_read, ret);
+    set_bytes(bytes_read, static_cast<int>(ret));
 #else
 
     (void)recv_flags;

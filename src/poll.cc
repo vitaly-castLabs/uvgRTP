@@ -65,14 +65,12 @@ rtp_error_t uvgrtp::poll::poll(std::vector<std::shared_ptr<uvgrtp::socket>>& soc
 
 #ifndef _WIN32
     struct pollfd fds[MULTICAST_MAX_PEERS];
-    int ret;
-
     for (size_t i = 0; i < sockets.size(); ++i) {
         fds[i].fd      = sockets.at(i)->get_raw_socket();
         fds[i].events  = POLLIN | POLLERR;
     }
 
-    ret = ::poll(fds, sockets.size(), timeout);
+    auto ret = ::poll(fds, static_cast<unsigned int>(sockets.size()), timeout);
 
     if (ret == -1) {
         set_bytes(bytes_read, -1);
