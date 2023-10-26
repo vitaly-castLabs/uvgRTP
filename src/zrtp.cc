@@ -72,7 +72,7 @@ void uvgrtp::zrtp::cleanup_session()
         delete[] session_.r_msg.hello.second;
                  session_.r_msg.hello.second = nullptr;
     }
-        
+
     if (session_.r_msg.dh.second)
     {
         delete[] session_.r_msg.dh.second;
@@ -499,7 +499,7 @@ rtp_error_t uvgrtp::zrtp::init_session(int key_agreement)
     int interval = 150;
     int i = 1;
 
-    while (true) {  
+    while (true) {
         long int next_sendslot = i * interval;
         long int run_time = (long int)uvgrtp::clock::hrc::diff_now(start);
         long int diff_ms = next_sendslot - run_time;
@@ -523,7 +523,7 @@ rtp_error_t uvgrtp::zrtp::init_session(int key_agreement)
                 *
                 * Commit message must be ACKed with DHPart1 messages so we need exit,
                 * construct that message and sent it to remote */
-                
+
             if (!are_we_initiator(session_.hash_ctx.o_hvi, session_.hash_ctx.r_hvi)) {
                 session_.role = RESPONDER;
                 return RTP_OK;
@@ -750,10 +750,10 @@ rtp_error_t uvgrtp::zrtp::init(uint32_t ssrc, std::shared_ptr<uvgrtp::socket> so
 {
     rtp_error_t ret = RTP_OK;
 
-    if (perform_dh) 
+    if (perform_dh)
     {
         zrtp_mtx_.lock();
-        
+
         if (initialized_)
         {
             UVG_LOG_WARN("ZRTP multistream mode not used. Please use RCE_ZRTP_MULTISTREAM_MODE flag " \
@@ -969,10 +969,8 @@ rtp_error_t uvgrtp::zrtp::get_srtp_keys(
 
 rtp_error_t uvgrtp::zrtp::packet_handler(void* args, int rce_flags, uint8_t* read_ptr, size_t size, frame::rtp_frame** out)
 {
-    if (size < 0 || (uint32_t)size < sizeof(uvgrtp::zrtp_msg::zrtp_msg))
-    {
+    if ((uint32_t)size < sizeof(uvgrtp::zrtp_msg::zrtp_msg))
         return RTP_PKT_NOT_HANDLED;
-    }
 
     (void)args;
     (void)rce_flags;
